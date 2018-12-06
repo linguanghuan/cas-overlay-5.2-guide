@@ -324,6 +324,46 @@ keytool -delete -alias cas -keystore  "C:/Program Files/Java/jdk1.8.0_192/jre/li
 
 
 
+### 直接用http交互
+
+application.properties修改
+
+1. 修改端口(没改也可以，但是浏览器会记住老是自动补上https，干脆就改了)
+
+2. ssl的三个配置注释掉
+
+```
+server.context-path=/cas
+server.port=6080
+
+#server.ssl.key-store=file:/etc/cas/cas.keystore
+#server.ssl.key-store-password=123456
+#server.ssl.key-password=123456
+```
+
+3. 加上cas.tgc.secure=false配置
+
+   ```
+   cas.tgc.secure=false
+   ```
+
+
+执行build run启动
+
+修改client的web.xml
+
+对应的cas https改为http，端口也改过来，重启
+
+
+
+### 单点登出问题
+
+cas-server退出后，client会话还在
+
+client退出后，cas-server会话也还在
+
+
+
 ## 参考
 
 1. [WAR Overlay Installation](https://apereo.github.io/cas/5.2.x/installation/Maven-Overlay-Installation.html)
