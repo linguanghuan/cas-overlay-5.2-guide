@@ -1,5 +1,9 @@
 # cas-overlay部署测试
 
+windows 7 环境 jdk1.8 下部署测试cas-overlay-template-5.2
+
+
+
 ### 服务端-基于静态用户
 
 下载
@@ -312,17 +316,11 @@ Using JRE_HOME:        "C:\Program Files\Java\jdk1.8.0_192"
 
 
 
-删除证书
+测完之后，没用了就删除证书
 
 ```powershell
 keytool -delete -alias cas -keystore  "C:/Program Files/Java/jdk1.8.0_192/jre/lib/security/cacerts"
 ```
-
-
-
-
-
-
 
 
 
