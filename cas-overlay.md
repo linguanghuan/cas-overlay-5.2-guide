@@ -1,6 +1,6 @@
-# cas-overlay服务端部署
+# cas-overlay部署测试
 
-### 基于静态用户配置部署
+### 服务端-基于静态用户
 
 下载
 
@@ -60,7 +60,7 @@ server.ssl.key-password=123456
 
 
 
-### 基于mysql验证用户
+### 服务端-基于mysql
 
 建表
 
@@ -190,6 +190,139 @@ cas.authn.jdbc.query[0].fieldPassword=passwd
 重新执行build run
 
 用数据库中的用户名密码admin/admin123登录成功
+
+
+
+### 客户端-配置运行
+
+https://github.com/cas-projects/cas-sample-java-webapp
+
+下载下来用idea打开，修改web.xml中的配置
+
+[web.xml.patch](web.xml.patch)
+
+然后部署到tomcat运行，这里运行在8080端口。访问
+
+http://localhost:8080
+
+跳转到cas服务器
+
+https://cas.example.org:8443/cas/login?service=http%3A%2F%2Flocalhost%3A8080%2F
+
+报错：
+
+```
+未认证授权的服务
+CAS的服务记录是空的，没有定义服务。 希望通过CAS进行认证的应用程序必须在服务记录中明确定义。
+```
+
+https://apereo.github.io/cas/5.2.x/installation/Configuration-Properties.html#service-registry
+
+https://apereo.github.io/cas/5.2.x/installation/JSON-Service-Management.html
+
+新建以下目录src/main/webapp/WEB-INF/classes/services/，从overlays对应的目录拷贝HTTPSandIMAPS-10000001.json文件到src/main/webapp/WEB-INF/classes/services/之下：
+
+src/main/webapp/WEB-INF/classes/services/HTTPSandIMAPS-10000001.json
+
+修改拷贝过来的文件 加上http
+
+```
+{
+  "@class" : "org.apereo.cas.services.RegexRegisteredService",
+  "serviceId" : "^(http|https|imaps)://.*",
+  "name" : "HTTP and HTTPS and IMAPS",
+  "id" : 10000001,
+  "description" : "This service definition authorizes all application urls that support HTTPS and IMAPS protocols.",
+  "evaluationOrder" : 10000
+}
+```
+
+**"serviceId" : "^(http|https|imaps)://.*",**
+
+执行build run重新启动
+
+再访问跳转后还是报错
+
+```
+2018-12-06 17:42:55,917 INFO [org.apereo.cas.services.ServiceRegistryInitializer
+] - <The service registry database backed by [InMemoryServiceRegistry] will not
+be initialized from JSON services. If the service registry database ends up empt
+y, CAS will refuse to authenticate services until service definitions are added
+to the registry. To auto-initialize the service registry, set 'cas.serviceRegist
+ry.initFromJson=true' in your CAS settings.>
+```
+
+ To auto-initialize the service registry, set **'cas.serviceRegistry.initFromJson=true'** in your CAS settings.>
+
+application配置文件里面加上这个配置
+
+可以跳转输入用户名和密码了，但是带ticket跳转回来的时候报错了
+
+http://localhost:8080/?ticket=ST-1-mrViIKshVrDHItInF7leaLk5G9E-lgh
+
+```
+java.lang.RuntimeException: javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+	org.jasig.cas.client.util.CommonUtils.getResponseFromServer(CommonUtils.java:443)
+```
+
+导出keystore证书
+
+```
+keytool -exportcert -alias cas -keystore D:/etc/cas/cas.keystore -file D:/etc/cas/cas.keystore.cer -storepass 123456
+```
+
+导入到jre (因为java安装在c盘需要用管理员打开cmd)
+
+```powershell
+keytool -import -alias cas -keystore "C:/Program Files/Java/jdk1.8.0_192/jre/lib/security/cacerts" -file D:/etc/cas/cas.keystore.cer
+```
+
+输入密码： changeit
+
+再输入Y确认(下图导入到错了，用的是1.8的导入到1.7去了所以还是有问题，命令行已经修正了，图片就不修正了)
+
+![import2jre](image/import2jre.png)
+
+查看导入结果：
+
+```powershell
+keytool -list -keystore "C:/Program Files/Java/jdk1.8.0_192/jre/lib/security/cacerts"
+```
+
+结果(alias为cas + 时间确认)：
+
+```
+cas, 2018-12-6, trustedCertEntry,
+证书指纹 (SHA1): BE:79:A1:E7:FC:52:CF:B0:B8:C5:80:5F:42:C2:A2:73:6D:16:ED:92
+```
+
+重启客户端tomcat
+
+
+
+日志确认tomcat用的java路径和刚刚导入证书的路径是一样的
+
+```
+Using JRE_HOME:        "C:\Program Files\Java\jdk1.8.0_192"
+```
+
+再次访问，登录成功后，就成功进入client的首页了, 展示如下
+
+![client_result](image/client_result.png)
+
+
+
+删除证书
+
+```powershell
+keytool -delete -alias cas -keystore  "C:/Program Files/Java/jdk1.8.0_192/jre/lib/security/cacerts"
+```
+
+
+
+
+
+
 
 
 
